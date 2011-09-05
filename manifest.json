@@ -1,9 +1,8 @@
 {
  "name": "USM",
  "description": "Universal Sequence Maps",
- "version": "1.10",
+ "version": "1.11",
  "app": {
-    "urls": ["*://usm.github.com/"],
     "launch": {
        "web_url": "http://usm.github.com/"
     }
