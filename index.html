@@ -1,0 +1,391 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+ <head>
+  <title> USM </title>
+  <meta name="Author" content="Jonas Almeida">
+  <meta name="Keywords" content="USM">
+  <meta name="Description" content="Universal Sequence Maps">
+  <script src="usm.js"></script>
+ </head>
+ <body>
+ <h3><a id="anchor_encoding" name="encoding">1.</a> Sequence Encoding</h3>
+ <table><tr><td>
+ <table>
+ <tr id="cgrBase"><td>Base Sequence:</td><td><input id="baseSequence" type="text" size=30 style="color:blue"><button id="processBase" onclick="usmGUI.processBaseSequence()">Encode </button></td></tr>
+ <tr id="cgrProbe" style="display:none"><td>Probe Sequence:</td><td><input id="probeSequence" type="text" size=30 style="color:red"><button id="processProbe" onclick="usmGUI.processProbeSequence()">Encode</button></td></tr>
+ </table>
+ </td><td>
+ <table id="baseCube" style="display:none">
+ <tr><td>Alphabet: </td><td id="alphabet" style="color:blue"></td></tr>
+ <tr><td>Cube zeros: </td><td id="cube" style="color:blue"></td></tr>
+ </table>
+ </td></tr></table>
+ <h3><a id="anchor_decoding" name="decoding">2.</a> Coordinate Decoding</h3>
+ Coordinates are real numbers between 0 and 1, type and press Enter:
+ <table id="decodeSingle" style="color:green">
+ <tr><td>Single coordinate (binary decoding)</td><td><input  size=8 onkeyup="usmGUI.decodeSingle(this,event)"></td><td id="singleDecoded" style="color:green"></td></tr>
+ </table>
+ <table id="decodeFB" style="display:none">
+ <tr id="forwardCoordinates" style='color:green'><td>Forward</td></tr>
+ <tr id="backwardCoordinates" style='color:green'><td>Backward </td></tr>
+ </table>
+ <h3><a id="anchor_distance" name="distance">3.</a> Distance Calculation</h3>
+ Between individual coordinates (Eq. 2):
+ <div id='indDist' style='color:green'>
+ d(<input type='text' id='indC1' size=8 onkeyup='usmGUI.indDist(this,event)'  style='color:green'>,<input type='text' id='indC2'  size=8 onkeyup='usmGUI.indDist(this,event)' style='color:green'>) = <span id='indD'></span>
+ </div>
+ <div id='usmDistDiv'>
+  Between USM coordinates (Eq. 3-5):
+ <table id='usmDist' style='color:green'>
+ <tr><td>d(</td><td style='color:blue'><span id='usmF1'>Forward: </span><hr><span id='usmB1'>Backward: </span></td><td>,</td><td style='color:red'><span id='usmF2'>Forward: </span><hr><span id='usmB2'>Backward: </span></td><td>)</td><td> = </td><td><span id='dF'>dF</span><hr><span id='dB'>dB</span></td></tr>
+ <tr><td></td><td></td><td></td><td></td><td></td><td> =  </td><td><span id='dUSM'>dUSM</span></td></tr>
+ </table>
+ </div>
+ <h3><a id="anchor_map" name="map">4.</a> Sequence MapReduced comparison</h3>
+ <p id='borrowedFBdecoded' style='color:green'></p>
+ <table id="mapTable" style="display:none;color:blue">
+ </table>
+  <script>
+  document.getElementById('baseSequence').value=document.location.search.slice(1);
+  gId=function(id){return document.getElementById(id)};
+  tr = function(){return document.createElement('tr')};
+  td = function(){return document.createElement('td')};
+  tbody = function(){return document.createElement('tbody')};
+  ip = function(){return document.createElement('input')};
+  usmGUI=function(){};
+
+  usmGUI.processBaseSequence=function(){
+     var seq=gId('baseSequence').value;
+	 console.log('processing base sequence "'+seq+'"');
+	 ubase=new usm(seq);
+	 // show cube
+	 c = document.getElementById('baseCube');
+	 c.style.display="";
+	 gId('alphabet').textContent=ubase.abc;
+	 gId('cube').textContent='[ "'+ubase.cube[0]+'"';
+	 for(var i=1;i<ubase.cube.length;i++){gId('cube').textContent+=' , "'+ubase.cube[i]+'"'}
+	 gId('cube').textContent+=' ]';
+	 gId('cgrProbe').style.display="";
+	 gId('processBase').style.visibility="hidden";
+	 gId('probeSequence').focus();
+	 usmGUI.mapTableBase();
+	 gId('decodeFB').style.display="";
+	 usmGUI.decodeFB();
+	 usmGUI.usmDistMount();
+	 return false;
+  }
+  usmGUI.mouseOverUSM = function (that,ev){// mouse over base coordinate
+	 //lala=[that,ev];
+	 if (that.id[0]=="B"){var u=ubase}
+	 else {var u=uprobe}
+	 var i = parseInt(that.id.slice(1,that.id.length-1));
+	 for (var j=0;j<ubase.cube.length;j++){
+		gId('decodeF'+'_'+j).value=u.cgrForward[i][j];
+		gId('decodeB'+'_'+j).value=u.cgrBackward[i][j];
+	 }
+	 // simulating keying ENTER, not sneaking the sequence out of ubase:
+	 usmGUI.decodeFB(gId('decodeF_0'),{'keyCode':13});
+	 usmGUI.decodeFB(gId('decodeB_0'),{'keyCode':13});
+	 gId('borrowedFBdecoded').textContent=gId('decodeFcalc').textContent+gId('decodeBcalc').textContent.slice(3);
+	 return false;
+  }
+
+  usmGUI.mouseOverDistance = function(that){ // mouse over distance in USMap
+     //console.log([that.i,that.j])
+	 var i = that.i ; var j = that.j;
+	 for (var k=0;k<ubase.cube.length;k++){
+	    gId('F1C'+k).value=ubase.cgrForward[i][k];
+		gId('B1C'+k).value=ubase.cgrBackward[i][k];
+		gId('F2C'+k).value=uprobe.cgrForward[j][k];
+		gId('B2C'+k).value=uprobe.cgrBackward[j][k];
+	 }
+	 // no cheating: the values are processed where they are
+	 usmGUI.usmDist(gId('F1C0'),{keyCode:13});
+	 usmGUI.usmDist(gId('B1C0'),{keyCode:13});
+
+
+	 return false;
+  }
+
+  usmGUI.mapTableBase=function(){
+	 var tb,tbodyi,tri,tdi,n,m,i,j;
+     tb=gId('mapTable');tb.style.color='black';
+	 tb.style.display="";
+	 n=ubase.seq.length;
+	 m=ubase.cube.length;
+	 tbodyi = tbody();tb.appendChild(tbodyi);tbodyi.id='mapTableBody';
+	 tri = tr();tbodyi.appendChild(tri);tri.id='probeForward';tri.style.color='red';
+	 tdi = td();tri.appendChild(tdi);tdi.textContent='PROBE';
+	 tdi = td();tri.appendChild(tdi);tdi.textContent='forward';
+	 tdi = td();tri.appendChild(tdi);tdi.textContent='Map';
+	 tri = tr();tbodyi.appendChild(tri);tri.id='probeBackward';tri.style.color='red';
+	 tdi = td();tri.appendChild(tdi);tdi.textContent='BASE';tdi.style.color='blue';
+	 tdi = td();tri.appendChild(tdi);tdi.textContent='backward';
+	 tdi = td();tri.appendChild(tdi);tdi.textContent='Map';
+	 // Table head
+	 tri = tr();tbodyi.appendChild(tri);tri.id='seq';tri.style.color='red';
+	 tdi = td();tri.appendChild(tdi);tdi.textContent='forward';tdi.style.color='blue';
+	 tdi = td();tri.appendChild(tdi);tdi.textContent='backward';tdi.style.color='blue';
+	 tdi = td();tri.appendChild(tdi);tdi.textContent='seq';tdi.style.color='black';
+	 for (i=0;i<n;i++){
+	    tri = tr();tbodyi.appendChild(tri);tri.id='B'+i;
+	    tdi = td();tri.appendChild(tdi);tdi.style.color='blue';
+		tdi.textContent='['+ubase.cgrForward[i][0].toString().slice(0,4);
+		for (j=1;j<m;j++){tdi.textContent+=','+ubase.cgrForward[i][j].toString().slice(0,4)}
+		tdi.textContent+=']';
+		tdi.id='B'+i+'F';
+		tdi.onmouseover=function onmouseover(event){usmGUI.mouseOverUSM(this,event);return false};
+	    tdi.onclick=function onclick(event){window.location.hash="";window.location.hash="decoding";return false};
+		tdi = td();tri.appendChild(tdi);tdi.style.color='blue';
+		tdi.textContent='['+ubase.cgrBackward[i][0].toString().slice(0,4);
+		for (j=1;j<m;j++){tdi.textContent+=','+ubase.cgrBackward[i][j].toString().slice(0,4)}
+		tdi.textContent+=']';
+	    tdi.id='B'+i+'B';
+		tdi.onmouseover=function onmouseover(event){usmGUI.mouseOverUSM(this,event);return false};
+		tdi.onclick=function onmouseclick(event){window.location.hash="";window.location.hash="decoding";return false};
+		tdi = td();tri.appendChild(tdi);tdi.textContent=ubase.seq[i];tdi.style.color='blue';
+	 }
+  }
+
+usmGUI.processProbeSequence=function(){
+     var seq=gId('probeSequence').value;
+	 console.log('processing probe sequence "'+seq+'"');
+	 if (window.uprobe){
+	    document.getElementById('mapTable').innerHTML='';usmGUI.processBaseSequence();
+		}
+	 uprobe=new usm(seq,ubase.abc,ubase.pack); // encode the probe sequence the same way as the base sequence
+	 uprobe.M=ubase.distMap(uprobe);
+	 usmGUI.mapTableProbe();
+  return false;
+  }
+
+  usmGUI.mapTableProbe=function(){
+     // forward
+	 trf=document.getElementById('probeForward');
+	 var n,m;
+	 n=uprobe.seq.length;m=uprobe.cgrForward[0].length;
+	 for (var i=0;i<n;i++){
+	    c = '[';
+		for (var j=0;j<m;j++){
+		   c+=uprobe.cgrForward[i][j].toString().slice(0,4)+',<br>';
+		}
+	    tdi=td();tdi.innerHTML=c.slice(0,c.length-5)+']';tdi.id='P'+i+'F';
+		tdi.onmouseover=function onmouseover(event){usmGUI.mouseOverUSM(this,event);return false};
+	    tdi.onclick=function onclick(event){window.location.hash="";window.location.hash="decoding";return false};
+		trf.appendChild(tdi);
+	 };
+	 tdi=td();trf.appendChild(tdi);
+	 tdi=td();trf.appendChild(tdi);
+
+	 // backward
+	 trf=document.getElementById('probeBackward');
+     n=uprobe.seq.length;m=uprobe.cgrBackward[0].length;
+	 for (var i=0;i<n;i++){
+	    c = '[';
+		for (var j=0;j<m;j++){
+		   c+=uprobe.cgrBackward[i][j].toString().slice(0,4)+',<br>';
+		}
+	    tdi=td();tdi.innerHTML=c.slice(0,c.length-5)+']';tdi.id='P'+i+'B';
+		tdi.onmouseover=function onmouseover(event){usmGUI.mouseOverUSM(this,event);return false};
+	    tdi.onclick=function onclick(event){window.location.hash="";window.location.hash="decoding";return false};
+		trf.appendChild(tdi);
+	 };
+	 tdi=td();trf.appendChild(tdi);tdi.textContent='Reduce';tdi.style.color='blue';
+	 tdi=td();trf.appendChild(tdi);tdi.textContent='to:';tdi.style.color='blue';
+	 
+	 
+
+	 // seq
+	 trf=document.getElementById('seq');
+     for (var i=0;i<n;i++){
+	    tdi=td();tdi.textContent=uprobe.seq[i];tdi.style.color='red';
+		trf.appendChild(tdi);
+	 }
+	 tdi=td();trf.appendChild(tdi);tdi.textContent='Sum';tdi.style.color='blue';
+	 tdi=td();trf.appendChild(tdi);tdi.textContent='Max';tdi.style.color='blue';
+
+	 // Distance
+	 n=uprobe.M.length;
+	 m=uprobe.M[0].length;
+	 uprobe.Msum=[];uprobe.Mmax=[];
+     for (var i=0;i<n;i++){
+	    trd=document.getElementById('B'+i);
+		for (var j=0;j<m;j++){
+		   var tdj = td();trd.appendChild(tdj);
+		   tdj.textContent=uprobe.M[i][j];
+		   tdj.i=i;tdj.j=j;
+		   tdj.onmouseover=function onmouseover(event){usmGUI.mouseOverDistance(this);return false};
+		   tdj.onclick=function onclick(event){window.location.hash="";window.location.hash="distance";return false};
+		}
+		uprobe.Msum[i]=uprobe.M[i].reduce(function(a,b){return(a+b)});
+		uprobe.Mmax[i]=uprobe.M[i].reduce(function(a,b){if (b>a){return b}else{return a}});
+		tdj=td();trd.appendChild(tdj);tdj.textContent=uprobe.Msum[i];tdj.style.color='blue';	 tdj=td();trd.appendChild(tdj);tdj.textContent=uprobe.Mmax[i];tdj.style.color='blue';
+	 }
+	 var tbody=gId('mapTableBody');// final two rows
+	 // Sum
+	 trd=tr();tbody.appendChild(trd);
+	 tdj=td();trd.appendChild(tdj);tdj.textContent='Reduce';tdj.style.color='red';
+	 tdj=td();trd.appendChild(tdj);tdj.textContent='Sum';tdj.style.color='red';
+	 tdj=td();trd.appendChild(tdj);tdj.textContent='';tdj.style.color='red';
+	 uprobe.MT=uprobe.transpose(uprobe.M); // transposed distance matrix
+	 uprobe.MTsum=[];
+	 for (var j=0;j<m;j++){
+		uprobe.MTsum[j]=uprobe.MT[j].reduce(function(a,b){return(a+b)});
+		var tdj = td();trd.appendChild(tdj);
+		tdj.textContent=uprobe.MTsum[j];
+		tdj.style.color='red';
+	 }
+	 var tdj = td();trd.appendChild(tdj);
+	 tdj.textContent=uprobe.Msum.reduce(function(a,b){return a+b});
+	 tdj.style.color='black';
+	 var tdj = td();trd.appendChild(tdj);
+	 tdj.textContent=uprobe.Mmax.reduce(function(a,b){return a+b});
+	 tdj.style.color='black';
+	 // Max
+	 trd=tr();tbody.appendChild(trd);
+	 tdj=td();trd.appendChild(tdj);tdj.textContent='to:';tdj.style.color='red';
+	 tdj=td();trd.appendChild(tdj);tdj.textContent='Max';tdj.style.color='red';
+	 tdj=td();trd.appendChild(tdj);tdj.textContent='';tdj.style.color='red';
+	 //uprobe.MT=uprobe.transpose(uprobe.M); // transposed distance matrix <-- done already
+	 uprobe.MTmax=[];
+	 for (var j=0;j<m;j++){
+		uprobe.MTmax[j]=uprobe.MT[j].reduce(function(a,b){if (b>a){return b}else{return a}});
+		var tdj = td();trd.appendChild(tdj);
+		tdj.textContent=uprobe.MTsum[j];
+		tdj.style.color='red';
+	 }
+	 var tdj = td();trd.appendChild(tdj);
+	 tdj.textContent=uprobe.Msum.reduce(function(a,b){if (b>a){return b}else{return a}});
+	 tdj.style.color='black';
+	 var tdj = td();trd.appendChild(tdj);
+	 tdj.textContent=uprobe.Mmax.reduce(function(a,b){if (b>a){return b}else{return a}});
+	 tdj.style.color='black';
+
+
+
+  }
+
+  usmGUI.decodeSingle = function (that,ev){
+     if (ev.keyCode==13){
+	    var v = (new usm).decodeBin(that.value).toString().replace(/\,/g,'');
+		document.getElementById('singleDecoded').textContent='['+v[0]+']'+v.slice(1);
+	 }
+  }
+
+  usmGUI.decodeFB = function (that,ev){ // decode CGR coordinates
+	 // and assemple template if it does not exist (if "that" is not provided
+	 var n=ubase.cube.length;
+	 if (!gId("decodeF_0")){
+	    var F = gId("forwardCoordinates");var B = gId("backwardCoordinates");
+		for (var i=0;i<n;i++){
+		   var tdFi=td();
+		   tdFi.innerHTML='<input type="text" id="'+'decodeF_'+i+'" size=8 onkeyup="usmGUI.decodeFB(this,event)">';
+		   F.appendChild(tdFi);
+		   var tdBi=td();
+		   tdBi.innerHTML='<input type="text" id="'+'decodeB_'+i+'" size=8 onkeyup="usmGUI.decodeFB(this,event)">';
+		   B.appendChild(tdBi);
+		}
+		var tdFi=td();tdFi.id='decodeFcalc';F.appendChild(tdFi);
+		var tdBi=td();tdBi.id='decodeBcalc';B.appendChild(tdBi);
+	 }
+	 else { // decoding here
+	   //console.log(that);
+	   if (ev.keyCode==13){ // ENTER PRESSED
+	      // Forward or backward?
+		  var id = that.id.split('_');
+		  var calc='yes';
+		  for (var i=0;i<n;i++){ // check for empty coordinates
+		     if (gId(id[0]+'_'+i).value.length==0){
+			    gId(id[0]+'_'+i).focus();
+				calc='no';
+				break;
+			    //console.log(i);
+		     }
+		  }
+		  if (calc=='yes'){
+		     var c=[];
+			 for (var i=0;i<n;i++){
+			    c[i]=gId(id[0]+'_'+i).value;
+			 }
+			 var ds=ubase.decode(c);
+			 //prepare decoded string for display
+			 if (id[0][6]=='F'){ds=ds.slice(1).reverse()+'['+ds[0]+']'} // forward
+			 else {ds='['+ds[0]+']'+ds.slice(1)} // backward
+		     gId(id[0]+'calc').textContent=ds; // display
+			 //gId('borrowedFBdecoded').textContent=''; //clear decoded FB sequence from #4
+		  }
+	   }
+	 }
+  }
+
+  usmGUI.indDist = function(that,ev){
+     if (ev.keyCode==13){
+	     //check that both coordinates are filled
+		 if (gId('indC1').value.length>0&&gId('indC2').value.length>0){
+		    gId('indD').textContent=(new usm).L(gId('indC1').value,gId('indC2').value);
+		 }
+     }
+  }
+
+  
+  usmGUI.usmDistMount=function (){
+     n=ubase.cube.length;
+	 for (var i=0;i<n;i++){
+	    var ipi=ip();ipi.size=8;ipi.id='F1C'+i;ipi.style.color='blue';
+		ipi.onkeyup=function onkeyup(event){usmGUI.usmDist(this,event)};
+		gId('usmF1').appendChild(ipi);
+		var ipi=ip();ipi.size=8;ipi.id='B1C'+i;ipi.style.color='blue';
+		ipi.onkeyup=function onkeyup(event){usmGUI.usmDist(this,event)};
+		gId('usmB1').appendChild(ipi);
+		var ipi=ip();ipi.size=8;ipi.id='F2C'+i;ipi.style.color='red';
+		ipi.onkeyup=function onkeyup(event){usmGUI.usmDist(this,event)};
+		gId('usmF2').appendChild(ipi);
+		var ipi=ip();ipi.size=8;ipi.id='B2C'+i;ipi.style.color='red';
+		ipi.onkeyup=function onkeyup(event){usmGUI.usmDist(this,event)};
+		gId('usmB2').appendChild(ipi);
+	 }
+  }
+
+  usmGUI.usmDist = function (that,ev){
+     if (ev.keyCode==13){ // if Enter was pressed
+	    // check that other coordinates are filled
+		var n = ubase.cube.length;
+		var checkOk=true; // it will stay true unless one coordinate is missing 
+		for (var j=2;j>0;j=j-1){ // j=[2,1] the two coordinates being compared
+			for (var i=0;i<n;i++){
+				var checkId = that.id.slice(0,1)+j+'C'+i;
+				if (gId(checkId).value.length==0){
+					gId(checkId).focus();
+					checkOk=false;
+					break;
+				}
+			}
+		}
+		if (checkOk){ // calculate distance
+		    var c=[]; // coordinates
+		    for (var j=2;j>0;j=j-1){ // j=[2,1] the two coordinates being compared
+				c[j]=[];
+				for (var i=0;i<n;i++){
+					var id = that.id.slice(0,1)+j+'C'+i;
+					c[j][i]=gId(id).value;
+				}
+			}
+			gId('d'+that.id.slice(0,1)).textContent=ubase.distCGR(c[1],c[2]);
+			// if both dF and dB are available calculate USM distance
+			if (gId('dF').textContent!=='dF'&&gId('dB').textContent!=='dB'){
+				var dUSM=parseInt(gId('dF').textContent)+parseInt(gId('dB').textContent);
+				if (dUSM>0){dUSM=dUSM-1};
+				gId('dUSM').textContent=dUSM;
+			}
+
+		}
+     }
+     
+  }
+
+
+  
+  //gId('processBase').click();
+  </script>
+ </body>
+</html>
