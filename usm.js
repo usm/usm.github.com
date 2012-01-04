@@ -40,6 +40,87 @@ Array.prototype.transpose=function(){ // written for arrays of arrays
 // Universal Sequence Mapping (USM)
 
 usm = function (seq,abc,pack){ // Universal Sequence Map
+	
+	this.loadFasta=function(url,callback,abc){// load long sequences from a FastA file
+		// for example
+		// url = 'ftp://ftp.ncbi.nlm.nih.gov/genomes/Bacteria/Escherichia_coli_K_12_substr__DH10B_uid58979/NC_010473.fna' <-- big bacteria
+		// url='ftp://ftp.ncbi.nlm.nih.gov/genomes/Bacteria/Acinetobacter_ADP1_uid61597/NC_005966.fna';
+		// url='ftp://ftp.ncbi.nlm.nih.gov/genomes/Bacteria/Streptococcus_pneumoniae_R6_uid57859/NC_003098.fna'
+		// url = url='ftp://ftp.ncbi.nlm.nih.gov/genomes/Viruses/Streptococcus_phage_2972_uid15254/NC_007019.fna' <-- phage
+		// u = new usm;u.loadFasta(url,function(x){console.log(x.length)})
+		// if default proxy doesn't work try this one: jmat.webrwUrl='http://webrw.no.de'
+		thisUsm = this;
+		if (!!abc){this.abc=abc}
+		//jmat.webrwUrl='http://webrw.no.de';
+		//console.log('using proxy '+jmat.webrwUrl+' to get fastA file '+url);
+		jmat.get(url,function(x){ // encode sequences
+			if (!!callback){callback(x)} // in case this function was called with a callback do that first
+			// let's encode it now
+			console.log(x[0]); // fastA head identification, everything else should be a long sequence
+			//x=x.splice(0,100); // <-- while debugging
+			var n = x.length;
+			thisUsm.seq = x.splice(1,n).reduce(function(a,b){return a+b}); // concatenate whole sequence
+			x=''; // to free memory
+			var nn = thisUsm.seq.length;
+			console.log('... found '+nn+' units divited in '+n+' segments,');
+			thisUsm.encodeLong(); // the seq will be picked from this.seq
+			//thisUsm.encode();
+			}
+		)
+		return 'using proxy '+jmat.webrwUrl+' to get fastA file '+url+' ...'
+	}
+	
+	this.encodeLong = function(seq,abc,pack){ // encoding long sequences by writting directly to the usm instance
+        if (!this.seq){throw ('Sequence not provided')}
+        if (!this.abc){
+			console.log('find alphabet ...');
+			this.abc=this.alphabet();	
+		};
+		console.log('... alphabet: '+this.abc);
+        this.cube=[];
+		console.log('packing USM space ...')
+        this.str2cube(pack,true);
+		console.log('...',this.cube);
+		console.log('filling USM space ...');
+        var m = this.cube.length, n = this.seq.length, i = 0;
+        this.cgrForward = [];this.cgrBackward = [];
+		//for(i=0;i<n;i++){this.cgrForward[i]=[[0]];this.cgrBackward[i]=[[0]]}
+		for(i=0;i<m;i++){this.cgrForward[i]=[];this.cgrBackward[i]=[]}
+        for (i=0;i<m;i++){
+			console.log((i*2+1)+'/'+(this.cube.length*2)+' mapping axis <'+this.cube[i]+'> forward');
+            this.cgrLong(i,'cgrForward');
+			console.log((i*2+2)+'/'+(this.cube.length*2)+' mapping axis <'+this.cube[i]+'> backward');
+			this.cgrLong(i,'cgrBackward');
+            this.bin[i]=[]; // free memory
+        }
+		console.log('packing CGR coordinates ...')
+		console.log('... forward ...')
+		var c=[];
+		for(i=0;i<n;i++){c[i]=[];for(j=0;j<m;j++){c[i][j]=this.cgrForward[j][i]}}
+		this.cgrForward=c;
+		console.log('... backward ...')
+		var c=[];
+		for(i=0;i<n;i++){c[i]=[];for(j=0;j<m;j++){c[i][j]=this.cgrBackward[j][i]}}
+		this.cgrBackward=c.reverse();
+		var c=[];
+		console.log('USMapping done');
+    }
+
+	this.cgrLong=function(ii,direction){ // one dimension at a time
+		var bin = this.bin[ii];
+		var n = bin.length;//, bins=[], k=10; // binning threads
+		if(direction=='cgrBackward'){bin.reverse();var c = this.cgrBackward[ii]}
+		else{var c = this.cgrForward[ii]}
+		var s=Math.random();for(var i=n-128;i<n;i++){s=s+(bin[i]-s)/2}
+		//this[direction][ii]=[];
+		//c[0][ii]=s+(bin[0]-s)/2;
+		c[0]=s+(bin[0]-s)/2;
+		for(var i=1;i<n;i++){
+			//c[i][ii]=c[i-1][ii]+(bin[i]-c[i-1][ii])/2;
+			c[i]=c[i-1]+(bin[i]-c[i-1])/2;
+		}
+		return 'done'
+	}
 
     this.alphabet=function(seqString){//extracts alphabet
         if (!seqString){seqString=this.seq} //uses own string if argument not provided
@@ -50,7 +131,7 @@ usm = function (seq,abc,pack){ // Universal Sequence Map
         return this.abc.sort(); // using overloaded String.sort()
     }
     
-    this.str2cube = function(pack){
+    this.str2cube = function(pack,show){
         var m = this.abc.length;var n = this.seq.length;
         if (!pack){pack='compact'} // default packing method
         this.pack=pack;
@@ -59,28 +140,27 @@ usm = function (seq,abc,pack){ // Universal Sequence Map
         case 'sparse':
             for (var j=0;j<m;j++){
                 this.cube[j]=this.abc[j];
-                this.bin[j]=[];
-                for (i=0;i<n;i++){
-                    if (this.seq[i]===this.abc[j]){this.bin[j][i]=0}
-                    else {this.bin[j][i]=1}
-                }
+				this.bin[j]=this.seq.split('').map(function(si){
+					if (si===this.abc[j]){return 0}
+	                else {return 1}
+				})
             }
             break;
         case 'compact':
             var L = Math.ceil(Math.log(m)/Math.log(2)); // map dimension
             var mm=Math.pow(2,L); // maximum length of this alphabet
             for (var j=0;j<L;j++){
-                this.bin[j]=[];
+                //this.bin[j]=[];
                 var abc='';mm=mm/2;
                 for (var i=0;i<m;i=i+mm*2){
                     abc+=this.abc.slice(i,i+mm);
                 }
                 this.cube[j]=abc;
-                //console.log(mm+'> '+abc);
-                for (var i=0;i<n;i++){
-                    if (abc.match(new RegExp(this.seq[i]))){this.bin[j][i]=0}
-                    else {this.bin[j][i]=1}
-                }
+				if (show){console.log((j+1)+'/'+L+' filling axis <'+abc+'>')}
+				this.bin[j]=this.seq.split('').map(function(si){
+				    if (abc.match(new RegExp(si))){return 0}
+	                else {return 1}	
+				})
             }
             break;
         //default :
@@ -88,21 +168,17 @@ usm = function (seq,abc,pack){ // Universal Sequence Map
         }
     }
         
-    this.cgr = function(bin,y){ // CGR with recursive seed
+    this.cgr = function(bin,s,ith){ // CGR with recursive seed
+		if (!ith){ith=0}
         var n = bin.length;
-        if (!y){y=[bin[bin.length-1]]}
-        var x = y[y.length-1];
-        //console.log(x); // seed
-        if (n>100){var i=n-100}
-        else {var i = 0}
-        while (i<n){
-            x = x - (x-bin[i])/2;
-            y[i] = x;
-            i++;
-        }
-        if (y[0]!==x - (x-bin[0])/2){
-            y=this.cgr(bin,y);
-        }
+		if (!s){s=bin[bin.length-1]} // start seed with last value of bin
+        var y=[];
+		y[0]=s+(bin[0]-s)/2;
+		for(var i=1;i<n;i++){
+			y[i]=y[i-1]+(bin[i]-y[i-1])/2;
+		}
+		// check recursive seed
+		if ((s!=y[y.length-1])&(ith<64)){y=this.cgr(bin,y[y.length-1],ith+1)}
         return y;
     }
 
@@ -113,6 +189,10 @@ usm = function (seq,abc,pack){ // Universal Sequence Map
             for (var j=0;j<M.length;j++){T[i][j]=M[j][i]}
         }
         return T;
+    }
+
+	this.transpose2 = function(M){
+        M[0].map(function(mi,i){var MM=[];})
     }
 
     this.encode = function(seq,abc,pack){
@@ -153,17 +233,6 @@ usm = function (seq,abc,pack){ // Universal Sequence Map
         }
         return y;
     }
-
-    //this.decodeBins = function(x,n){// decode sequence from coordinates
-    //    if (this.cube.length!==x.length){throw('coordinate dimensions do not match, if should be an array with '+this.cube.length+' numbers')}
-    //    var decodeBin=this.decodeBin;
-    //    var y = x.map(function (x){return decodeBin(x,n)});
-        //if (!n){// trim dimensions
-        //    n=y.map(function(x){return x.length}).min();
-        //    y=y.map(function(x){return x.splice(0,n)});
-        //}
-    //    return y;
-    //}
 
     this.bin2int = function (B){//converts binary vector into integer
         return B.slice().reverse().map(function(x,i){return x*Math.pow(2,i)}).reduce(function(a,b){return a+b});
