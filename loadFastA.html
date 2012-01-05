@@ -1,0 +1,41 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+ <head>
+  <title> USM </title>
+  <meta name="Author" content="Jonas Almeida">
+  <meta name="Keywords" content="USM">
+  <meta name="Description" content="Loading and processing fastA using Universal Sequence Maps">
+  <script src="usm.js"></script>
+  <script src="http://jmat.googlecode.com/git/jmat.js"></script>
+ </head>
+ <body>
+ <p>Loading and processing fastA using Universal Sequence Maps. Run this script by concatenating fastA URL after "?", for example,
+ <br><a href="http://usm.github.com/loadFastA.html?ftp://ftp.ncbi.nlm.nih.gov/genomes/Bacteria/Streptococcus_pneumoniae_R6_uid57859/NC_003098.fna">http://usm.github.com/loadFastA.html?ftp://ftp.ncbi.nlm.nih.gov/genomes/Bacteria/Streptococcus_pneumoniae_R6_uid57859/NC_003098.fna</a></p>
+
+<script>
+u = new usm;
+url = document.location.search;
+if (url.length>1){
+	url=url.slice(1);
+	jmat.disp('---- USMapping of '+url+' ----');
+	jmat.disp('results are stored in variable "u",');
+	jmat.disp('at the end see the browser\'s console.');
+	jmat.disp(' ');
+	jmat.disp('reading '+url+' through proxy at '+jmat.webrwUrl+' ...');
+	jmat.get(url,function(x){ // encode sequences
+		// let's encode it now
+		jmat.disp(x[0]); // fastA head identification, everything else should be a long sequence
+		//x=x.splice(0,100); // <-- while debugging
+		var n = x.length;
+		u.seq = x.splice(1,n).reduce(function(a,b){return a+b}); // concatenate whole sequence
+		x=''; // to free memory
+		var nn = u.seq.length;
+		jmat.disp('... found '+nn+' units divited in '+n+' segments,');
+		u.encodeLong(); // the seq will be picked from this.seq
+		//thisUsm.encode();
+		}
+	)
+}
+</script>
+ </body>
+</html>

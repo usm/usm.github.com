@@ -46,64 +46,65 @@ usm = function (seq,abc,pack){ // Universal Sequence Map
 		// url = 'ftp://ftp.ncbi.nlm.nih.gov/genomes/Bacteria/Escherichia_coli_K_12_substr__DH10B_uid58979/NC_010473.fna' <-- big bacteria
 		// url='ftp://ftp.ncbi.nlm.nih.gov/genomes/Bacteria/Acinetobacter_ADP1_uid61597/NC_005966.fna';
 		// url='ftp://ftp.ncbi.nlm.nih.gov/genomes/Bacteria/Streptococcus_pneumoniae_R6_uid57859/NC_003098.fna'
-		// url = url='ftp://ftp.ncbi.nlm.nih.gov/genomes/Viruses/Streptococcus_phage_2972_uid15254/NC_007019.fna' <-- phage
+		// url='ftp://ftp.ncbi.nlm.nih.gov/genomes/Viruses/Streptococcus_phage_2972_uid15254/NC_007019.fna' <-- phage
 		// u = new usm;u.loadFasta(url,function(x){console.log(x.length)})
 		// if default proxy doesn't work try this one: jmat.webrwUrl='http://webrw.no.de'
+		jmat.disp('---- USMapping started ----');
 		thisUsm = this;
 		if (!!abc){this.abc=abc}
 		//jmat.webrwUrl='http://webrw.no.de';
-		//console.log('using proxy '+jmat.webrwUrl+' to get fastA file '+url);
 		jmat.get(url,function(x){ // encode sequences
 			if (!!callback){callback(x)} // in case this function was called with a callback do that first
 			// let's encode it now
-			console.log(x[0]); // fastA head identification, everything else should be a long sequence
+			jmat.disp(x[0]); // fastA head identification, everything else should be a long sequence
 			//x=x.splice(0,100); // <-- while debugging
 			var n = x.length;
 			thisUsm.seq = x.splice(1,n).reduce(function(a,b){return a+b}); // concatenate whole sequence
 			x=''; // to free memory
 			var nn = thisUsm.seq.length;
-			console.log('... found '+nn+' units divited in '+n+' segments,');
+			jmat.disp('... found '+nn+' units divited in '+n+' segments,');
 			thisUsm.encodeLong(); // the seq will be picked from this.seq
 			//thisUsm.encode();
 			}
 		)
+		jmat.disp('using proxy '+jmat.webrwUrl+' to get fastA file '+url+' ...');
 		return 'using proxy '+jmat.webrwUrl+' to get fastA file '+url+' ...'
 	}
 	
 	this.encodeLong = function(seq,abc,pack){ // encoding long sequences by writting directly to the usm instance
         if (!this.seq){throw ('Sequence not provided')}
         if (!this.abc){
-			console.log('find alphabet ...');
+			jmat.disp('find alphabet ...');
 			this.abc=this.alphabet();	
 		};
-		console.log('... alphabet: '+this.abc);
+		jmat.disp('... alphabet: '+this.abc);
         this.cube=[];
-		console.log('packing USM space ...')
+		jmat.disp('packing USM space ...')
         this.str2cube(pack,true);
-		console.log('...',this.cube);
-		console.log('filling USM space ...');
+		jmat.disp('...',this.cube);
+		jmat.disp('filling USM space ...');
         var m = this.cube.length, n = this.seq.length, i = 0;
         this.cgrForward = [];this.cgrBackward = [];
 		//for(i=0;i<n;i++){this.cgrForward[i]=[[0]];this.cgrBackward[i]=[[0]]}
 		for(i=0;i<m;i++){this.cgrForward[i]=[];this.cgrBackward[i]=[]}
         for (i=0;i<m;i++){
-			console.log((i*2+1)+'/'+(this.cube.length*2)+' mapping axis <'+this.cube[i]+'> forward');
+			jmat.disp((i*2+1)+'/'+(this.cube.length*2)+' mapping axis <'+this.cube[i]+'> forward');
             this.cgrLong(i,'cgrForward');
-			console.log((i*2+2)+'/'+(this.cube.length*2)+' mapping axis <'+this.cube[i]+'> backward');
+			jmat.disp((i*2+2)+'/'+(this.cube.length*2)+' mapping axis <'+this.cube[i]+'> backward');
 			this.cgrLong(i,'cgrBackward');
             this.bin[i]=[]; // free memory
         }
-		console.log('packing CGR coordinates ...')
-		console.log('... forward ...')
+		jmat.disp('packing CGR coordinates ...')
+		jmat.disp('... forward ...')
 		var c=[];
 		for(i=0;i<n;i++){c[i]=[];for(j=0;j<m;j++){c[i][j]=this.cgrForward[j][i]}}
 		this.cgrForward=c;
-		console.log('... backward ...')
+		jmat.disp('... backward ...')
 		var c=[];
 		for(i=0;i<n;i++){c[i]=[];for(j=0;j<m;j++){c[i][j]=this.cgrBackward[j][i]}}
 		this.cgrBackward=c.reverse();
 		var c=[];
-		console.log('USMapping done');
+		jmat.disp('---- USMapping done ----');
     }
 
 	this.cgrLong=function(ii,direction){ // one dimension at a time
