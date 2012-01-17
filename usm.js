@@ -46,7 +46,7 @@ usm = function (seq,abc,pack){ // Universal Sequence Map
 		// url = 'ftp://ftp.ncbi.nlm.nih.gov/genomes/Bacteria/Escherichia_coli_K_12_substr__DH10B_uid58979/NC_010473.fna' <-- big bacteria
 		// url='ftp://ftp.ncbi.nlm.nih.gov/genomes/Bacteria/Acinetobacter_ADP1_uid61597/NC_005966.fna';
 		// url='ftp://ftp.ncbi.nlm.nih.gov/genomes/Bacteria/Streptococcus_pneumoniae_R6_uid57859/NC_003098.fna'
-		// url = url='ftp://ftp.ncbi.nlm.nih.gov/genomes/Viruses/Streptococcus_phage_2972_uid15254/NC_007019.fna' <-- phage
+		// url='ftp://ftp.ncbi.nlm.nih.gov/genomes/Viruses/Streptococcus_phage_2972_uid15254/NC_007019.fna' <-- phage
 		// u = new usm;u.loadFasta(url,function(x){console.log(x.length)})
 		// if default proxy doesn't work try this one: jmat.webrwUrl='http://webrw.no.de'
 		thisUsm = this;
@@ -253,6 +253,7 @@ usm = function (seq,abc,pack){ // Universal Sequence Map
     this.L = function (a,b){ // distance between two coordinates
         var d=0;
         while((Math.pow(2,d)!=Infinity)&Math.round(a*Math.pow(2,d))==Math.round(b*Math.pow(2,d))){d++}
+		if(Math.pow(2,d)==Infinity){d=64} // stop at the numerical resolution
         return d;
     }
 
@@ -293,8 +294,67 @@ usm = function (seq,abc,pack){ // Universal Sequence Map
 		if (!sbase){sbase=this} //
 		return sbase.usm.map(function(x){return sprobe.usm.map(function(y){return sbase.dist(x,y)})});
 	}
-
-    if (seq){this.encode(seq,abc,pack)}
+	
+	this.align=function(sprobe,sbase){ //align sequence sprobe to this sequence
+		if (typeof(sprobe)=='string'){sprobe = new usm(sprobe,this.abc,this.pack)} // in case the actual sequence was inputed
+		if (!sbase){sbase=this} //
+		// start by considering a complete match and zoom in until such a subset is found
+		var n = sprobe.seq.length;
+		var A={posBase:[0],posProbe:[0],match:[0],ind:0}
+		this.alignUsm=function(posStart,posEnd){ // defined here to capture align closure
+			var inc = Math.floor((posEnd-posStart)/2);// increment
+			var i=posStart+inc;
+			var res=32;//some resolution
+			//this.distCGR(x[0],y[0])+this.distCGR(x[1],y[1]) Eq 5
+			// var d = sbase.usm.map(function(ui){return sbase.distCGR(ui[0],sprobe.usm[i][0])+sbase.distCGR(ui[1],sprobe.usm[i][1])});
+			var d = sbase.cgrForward.map(function(cf,ii){return sbase.distCGR(cf,sprobe.cgrForward[i])+sbase.distCGR(sbase.cgrBackward[ii],sprobe.cgrBackward[i])});
+			var mm = jmat.max2(d);if(mm[0]>0){mm[0]-=1};// var ind = mm[0],dmax=mm[1];
+			var j=A.posProbe.length;
+			//var dF=sbase.distCGR(sbase.usm[mm[1]][0],sprobe.usm[i][0]); // forward distance
+			dF=sbase.distCGR(sbase.cgrForward[mm[1]],sprobe.cgrForward[i]); // forward distance
+			if(dF>0){dF-=1}
+			A.posBase[j]=mm[1]-dF; // using foward CGR to find start position
+			A.posProbe[j]=i-dF;
+			if(mm[0]>res){ // check if numerial resolution might have been exceeded
+				//var dFi=sbase.distCGR(sbase.usm[A.posBase[j]][0],sprobe.usm[A.posProbe[j]][0])-1; // additional forward distance
+				var dFi=sbase.distCGR(sbase.cgrForward[A.posBase[j]],sprobe.cgrForward[A.posProbe[j]])-1; // additional forward distance
+				while(dFi>0){ // if some was found
+					A.posProbe[j]-=dFi;A.posBase[j]-=dFi;
+					mm[0]+=dFi;
+					//dFi=sbase.distCGR(sbase.usm[A.posBase[j]][0],sprobe.usm[A.posProbe[j]][0])-1;
+					dFi=sbase.distCGR(sbase.cgrForward[A.posBase[j]],sprobe.cgrForward[A.posProbe[j]])-1;
+				}
+				// repeat proceedure for the end of the sequence
+				//dFi=sbase.distCGR(sbase.usm[A.posBase[j]+mm[0]-1][1],sprobe.usm[A.posProbe[j]+mm[0]-1][1])-1; // backward distance at the end of match segment
+				dFi=sbase.distCGR(sbase.cgrBackward[A.posBase[j]+mm[0]-1],sprobe.cgrBackward[A.posProbe[j]+mm[0]-1])-1; // backward distance at the end of match segment
+				while(dFi>0){ // if some was found
+					mm[0]+=dFi;
+					//dFi=sbase.distCGR(sbase.usm[A.posBase[j]+mm[0]-1][1],sprobe.usm[A.posProbe[j]+mm[0]-1][1])-1;
+					dFi=sbase.distCGR(sbase.cgrBackward[A.posBase[j]+mm[0]-1],sprobe.cgrBackward[A.posProbe[j]+mm[0]-1])-1;
+				}
+			}
+			A.match[j]=mm[0];
+			if(mm[0]>(A.match[A.ind]+1)){A.ind=j}; // if this is the best match yet
+			if(A.match[A.ind]<inc){ // if best match is shorter then increment, zoom into its halves
+				inc = Math.floor(inc/2);
+				this.alignUsm(posStart,inc);
+				this.alignUsm(inc+1,posEnd);
+			}
+		}
+		this.alignUsm(0,n);
+		return A
+		//sbase.usm.map(function(x){return sprobe.usm.map(function(y){return sbase.dist(x,y)})});
+	}
+	
+    if (seq){// find out if this is a sequence or the url of a fastA file with one
+		if(seq.length>15){ // it could be a url
+			if(!!seq.slice(0,10).match(/:\/\//)){
+				console.log('using proxy '+jmat.webrwUrl+'\nto get fastA file '+url+' ...');
+				this.loadFasta(seq,function(x){console.log(x.length)})}
+			else{this.encode(seq,abc,pack)}
+		}
+		else{this.encode(seq,abc,pack)}
+	}
 	else {if (abc){this.encode(abc,abc,pack)}} // if alphabet is provided then identify cube anyway to enable decoding
 
 }
