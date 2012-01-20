@@ -342,6 +342,7 @@ usm = function (seq,abc,pack){ // Universal Sequence Map
 			}
 		}
 		this.alignUsm(0,n);
+		console.log('largest identical segment has length '+A.match[A.ind]+' and aligns with position '+A.posBase[A.ind]+' in base sequence and position '+A.posProbe[A.ind]+' in probe sequence');
 		return A
 		//sbase.usm.map(function(x){return sprobe.usm.map(function(y){return sbase.dist(x,y)})});
 	}
@@ -349,8 +350,8 @@ usm = function (seq,abc,pack){ // Universal Sequence Map
     if (seq){// find out if this is a sequence or the url of a fastA file with one
 		if(seq.length>15){ // it could be a url
 			if(!!seq.slice(0,10).match(/:\/\//)){
-				console.log('using proxy '+jmat.webrwUrl+'\nto get fastA file '+url+' ...');
-				this.loadFasta(seq,function(x){console.log(x.length)})}
+				console.log('using proxy '+jmat.webrwUrl+'\nto get fastA file '+seq+' ...');
+				this.loadFasta(seq,function(x){console.log('... file loaded ...')})}
 			else{this.encode(seq,abc,pack)}
 		}
 		else{this.encode(seq,abc,pack)}
