@@ -39,7 +39,7 @@ Array.prototype.transpose=function(){ // written for arrays of arrays
 
 // Universal Sequence Mapping (USM)
 
-usm = function (seq,abc,pack){ // Universal Sequence Map
+usm = function (seq,abc,pack,seed){ // Universal Sequence Map
 	
 	this.loadFasta=function(url,callback,abc){// load long sequences from a FastA file
 		// for example
@@ -70,7 +70,7 @@ usm = function (seq,abc,pack){ // Universal Sequence Map
 		return 'using proxy '+jmat.webrwUrl+' to get fastA file '+url+' ...'
 	}
 	
-	this.encodeLong = function(seq,abc,pack){ // encoding long sequences by writting directly to the usm instance
+	this.encodeLong = function(seq,abc,pack,seed){ // encoding long sequences by writting directly to the usm instance
         if (!this.seq){throw ('Sequence not provided')}
         if (!this.abc){
 			console.log('find alphabet ...');
@@ -106,12 +106,14 @@ usm = function (seq,abc,pack){ // Universal Sequence Map
 		console.log('USMapping done');
     }
 
-	this.cgrLong=function(ii,direction){ // one dimension at a time
+	this.cgrLong=function(ii,direction,s){ // one dimension at a time
 		var bin = this.bin[ii];
 		var n = bin.length;//, bins=[], k=10; // binning threads
 		if(direction=='cgrBackward'){bin.reverse();var c = this.cgrBackward[ii]}
 		else{var c = this.cgrForward[ii]}
-		var s=Math.random();for(var i=n-128;i<n;i++){s=s+(bin[i]-s)/2}
+		if (!s){ // seed
+			var s=Math.random();for(var i=n-128;i<n;i++){s=s+(bin[i]-s)/2}
+		}
 		//this[direction][ii]=[];
 		//c[0][ii]=s+(bin[0]-s)/2;
 		c[0]=s+(bin[0]-s)/2;
@@ -182,6 +184,12 @@ usm = function (seq,abc,pack){ // Universal Sequence Map
         return y;
     }
 
+	this.cgr2 = function(bin,seed){ // CGR with 1/2 seed
+		var y=[1/2+(bin[0]-1/2)/2];
+		for(var i=1;i<bin.length;i++){y[i]=y[i-1]+(bin[i]-y[i-1])/2}
+		return y;
+	}
+
     this.transpose = function(M){
         var T=[];
         for (var i=0;i<M[0].length;i++){
@@ -195,7 +203,7 @@ usm = function (seq,abc,pack){ // Universal Sequence Map
         M[0].map(function(mi,i){var MM=[];})
     }
 
-    this.encode = function(seq,abc,pack){
+    this.encode = function(seq,abc,pack,seed){
         if (!seq){seq=this.seq}
         else {this.seq=seq}
         if (!this.seq){throw ('Sequence not provided')}
@@ -208,10 +216,18 @@ usm = function (seq,abc,pack){ // Universal Sequence Map
         this.str2cube(pack);
         this.cgrForward = [];
         this.cgrBackward = [];
-        for (var i=0;i<this.bin.length;i++){
-            this.cgrForward[i]=this.cgr(this.bin[i]);
-            this.cgrBackward[i]=this.cgr(this.bin[i].slice().reverse()).slice().reverse();
-        }
+		if (!seed){
+        	for (var i=0;i<this.bin.length;i++){
+            	this.cgrForward[i]=this.cgr(this.bin[i]);
+            	this.cgrBackward[i]=this.cgr(this.bin[i].slice().reverse()).slice().reverse();
+        	}
+		}
+		else{ // seeded CGR
+			for (var i=0;i<this.bin.length;i++){
+            	this.cgrForward[i]=this.cgr2(this.bin[i],seed);
+            	this.cgrBackward[i]=this.cgr2(this.bin[i].slice().reverse(),seed).slice().reverse();
+        	}
+		}
         //delete this.bin; // comment out if .bin is of no use <---<---<--- NOTE!
         this.cgrForward=this.transpose(this.cgrForward);
         this.cgrBackward=this.transpose(this.cgrBackward);
@@ -299,43 +315,42 @@ usm = function (seq,abc,pack){ // Universal Sequence Map
 		if (typeof(sprobe)=='string'){sprobe = new usm(sprobe,this.abc,this.pack)} // in case the actual sequence was inputed
 		if (!sbase){sbase=this} //
 		// start by considering a complete match and zoom in until such a subset is found
-		var n = sprobe.seq.length;
+		var n = sprobe.seq.length , nn = sbase.seq.length;
 		var A={posBase:[0],posProbe:[0],match:[0],ind:0}
 		this.alignUsm=function(posStart,posEnd){ // defined here to capture align closure
+			console.log([posStart,posEnd]);
 			var inc = Math.floor((posEnd-posStart)/2);// increment
 			var i=posStart+inc;
 			var res=32;//some resolution
 			//this.distCGR(x[0],y[0])+this.distCGR(x[1],y[1]) Eq 5
-			// var d = sbase.usm.map(function(ui){return sbase.distCGR(ui[0],sprobe.usm[i][0])+sbase.distCGR(ui[1],sprobe.usm[i][1])});
 			var d = sbase.cgrForward.map(function(cf,ii){return sbase.distCGR(cf,sprobe.cgrForward[i])+sbase.distCGR(sbase.cgrBackward[ii],sprobe.cgrBackward[i])});
 			var mm = jmat.max2(d);if(mm[0]>0){mm[0]-=1};// var ind = mm[0],dmax=mm[1];
 			var j=A.posProbe.length;
 			//var dF=sbase.distCGR(sbase.usm[mm[1]][0],sprobe.usm[i][0]); // forward distance
-			dF=sbase.distCGR(sbase.cgrForward[mm[1]],sprobe.cgrForward[i]); // forward distance
+			var dF=sbase.distCGR(sbase.cgrForward[mm[1]],sprobe.cgrForward[i]); // forward distance
 			if(dF>0){dF-=1}
 			A.posBase[j]=mm[1]-dF; // using foward CGR to find start position
+			if(A.posBase[j]<0){mm[0]-=(dF-mm[1]);dF=mm[1];A.posBase[j]=0} // check lower boundary for Base
+			if((A.posBase[j]+dF)>nn){mm[0]-=A.posBase[j]+mm[0]-nn} // check upper boundary for Base
 			A.posProbe[j]=i-dF;
+			if(A.posProbe[j]<0){mm[0]-=(dF-i);dF=i;A.posProbe[j]=0;A.posBase[j]=mm[1]-dF;} // check lower boundary for Probe
+			if((A.posProbe[j]+mm[0])>n){mm[0]-=A.posProbe[j]+mm[0]-n} // check upper boundary of Probe
 			if(mm[0]>res){ // check if numerial resolution might have been exceeded
-				//var dFi=sbase.distCGR(sbase.usm[A.posBase[j]][0],sprobe.usm[A.posProbe[j]][0])-1; // additional forward distance
-				var dFi=sbase.distCGR(sbase.cgrForward[A.posBase[j]],sprobe.cgrForward[A.posProbe[j]])-1; // additional forward distance
-				while(dFi>0){ // if some was found
-					A.posProbe[j]-=dFi;A.posBase[j]-=dFi;
-					mm[0]+=dFi;
-					//dFi=sbase.distCGR(sbase.usm[A.posBase[j]][0],sprobe.usm[A.posProbe[j]][0])-1;
-					dFi=sbase.distCGR(sbase.cgrForward[A.posBase[j]],sprobe.cgrForward[A.posProbe[j]])-1;
-				}
-				// repeat proceedure for the end of the sequence
-				//dFi=sbase.distCGR(sbase.usm[A.posBase[j]+mm[0]-1][1],sprobe.usm[A.posProbe[j]+mm[0]-1][1])-1; // backward distance at the end of match segment
-				dFi=sbase.distCGR(sbase.cgrBackward[A.posBase[j]+mm[0]-1],sprobe.cgrBackward[A.posProbe[j]+mm[0]-1])-1; // backward distance at the end of match segment
-				while(dFi>0){ // if some was found
-					mm[0]+=dFi;
-					//dFi=sbase.distCGR(sbase.usm[A.posBase[j]+mm[0]-1][1],sprobe.usm[A.posProbe[j]+mm[0]-1][1])-1;
-					dFi=sbase.distCGR(sbase.cgrBackward[A.posBase[j]+mm[0]-1],sprobe.cgrBackward[A.posProbe[j]+mm[0]-1])-1;
-				}
-			}
+							var dFi=sbase.distCGR(sbase.cgrForward[A.posBase[j]],sprobe.cgrForward[A.posProbe[j]])-1; // additional forward distance
+							while(dFi>0){ // if some was found
+								A.posProbe[j]-=dFi;A.posBase[j]-=dFi;
+								mm[0]+=dFi;
+								dFi=sbase.distCGR(sbase.cgrForward[A.posBase[j]],sprobe.cgrForward[A.posProbe[j]])-1;
+							}
+							dFi=sbase.distCGR(sbase.cgrBackward[A.posBase[j]+mm[0]-1],sprobe.cgrBackward[A.posProbe[j]+mm[0]-1])-1; // backward distance at the end of match segment
+							while(dFi>0){ // if some was found
+								mm[0]+=dFi;
+								dFi=sbase.distCGR(sbase.cgrBackward[A.posBase[j]+mm[0]-1],sprobe.cgrBackward[A.posProbe[j]+mm[0]-1])-1;
+							}
+						}
 			A.match[j]=mm[0];
-			if(mm[0]>(A.match[A.ind]+1)){A.ind=j}; // if this is the best match yet
-			if(A.match[A.ind]<inc){ // if best match is shorter then increment, zoom into its halves
+			if(mm[0]>(A.match[A.ind])){A.ind=j}; // if this is the best match yet
+			if(A.match[A.ind]<inc){ // if best match is shorter than increment, zoom into its halves
 				inc = Math.floor(inc/2);
 				this.alignUsm(posStart,inc);
 				this.alignUsm(inc+1,posEnd);
@@ -354,9 +369,9 @@ usm = function (seq,abc,pack){ // Universal Sequence Map
 				this.loadFasta(seq,function(x){console.log('... file loaded ...')})}
 			else{this.encode(seq,abc,pack)}
 		}
-		else{this.encode(seq,abc,pack)}
+		else{this.encode(seq,abc,pack,seed)}
 	}
-	else {if (abc){this.encode(abc,abc,pack)}} // if alphabet is provided then identify cube anyway to enable decoding
+	else {if (abc){this.encode(abc,abc,pack,seed)}} // if alphabet is provided then identify cube anyway to enable decoding
 
 }
 
