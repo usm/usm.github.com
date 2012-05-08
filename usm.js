@@ -325,7 +325,7 @@ usm = function (seq,abc,pack,seed){ // Universal Sequence Map
 			//this.distCGR(x[0],y[0])+this.distCGR(x[1],y[1]) Eq 5
 			var d = sbase.cgrForward.map(function(cf,ii){return sbase.distCGR(cf,sprobe.cgrForward[i])+sbase.distCGR(sbase.cgrBackward[ii],sprobe.cgrBackward[i])});
 			//var mm = jmat.max2(d); // lets code it here so we don't need jmat just yet:
-			var mm = d.map(function(x){return x.reduce(function(a,b){return Math.max(a,b)})}).reduce(function(a,b){return Math.max(a,b)});
+			var mm = d.reduce(function(a,b){return Math.max(a,b)});
 			if(mm[0]>0){mm[0]-=1};// var ind = mm[0],dmax=mm[1];
 			var j=A.posProbe.length;
 			//var dF=sbase.distCGR(sbase.usm[mm[1]][0],sprobe.usm[i][0]); // forward distance
