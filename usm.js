@@ -409,3 +409,10 @@ usmDist=function(s1,s2,opt){ // Compares two USM encoded sequences
 
 	}
 }
+
+// load jmat
+if(typeof(jmat)=='undefined'){
+	var s=document.createElement('script');
+	s.src='jmat.googlecode.com/git/jmat.js';
+	document.body.appendChild(s);
+}
