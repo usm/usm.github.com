@@ -71,6 +71,8 @@ usm = function (seq,abc,pack,seed){ // Universal Sequence Map
 	}
 	
 	this.encodeLong = function(seq,abc,pack,seed){ // encoding long sequences by writting directly to the usm instance
+		if(!!seq){this.seq=seq}
+		if(!!abc){this.seq=abc}
         if (!this.seq){throw ('Sequence not provided')}
         if (!this.abc){
 			console.log('find alphabet ...');
