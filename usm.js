@@ -371,7 +371,28 @@ usm = function (seq,abc,pack,seed){ // Universal Sequence Map
 		return A
 		//sbase.usm.map(function(x){return sprobe.usm.map(function(y){return sbase.dist(x,y)})});
 	}
-	
+
+    this.alignQ = function (sprobe, sbase) {
+     // This function provides an asynchronous wrapper for the usual
+     // `this.align` method using Quanah (http://wilkinson.github.com/quanah/).
+        if (Object.prototype.hasOwnProperty('Q') === false) {
+            throw new Error('Quanah is not loaded.');
+        }
+        var Q, that, y;
+        Q = Object.prototype.Q;
+        that = this;                    //- the current USM object
+        y = Q.avar();
+        y.Q(function (evt) {
+            if (that.hasOwnProperty('cgrBackward') === false) {
+                window.setTimeout(y.revive, 0);
+                return evt.stay('Waiting for indexing to finish ...');
+            }
+            y.val = that.align(sprobe, sbase);
+            return evt.exit();
+        });
+        return y;
+    };
+
     if (seq){// find out if this is a sequence or the url of a fastA file with one
 		if(seq.length>15){ // it could be a url
 			if(!!seq.slice(0,10).match(/:\/\//)){
