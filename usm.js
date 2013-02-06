@@ -397,7 +397,7 @@ usm = function (seq,abc,pack,seed){ // Universal Sequence Map
 		if(seq.length>15){ // it could be a url
 			if(!!seq.slice(0,10).match(/:\/\//)){
 				console.log('using proxy '+jmat.webrwUrl+'\nto get fastA file '+seq+' ...');
-				this.loadFasta(seq,function(x){console.log('... file loaded ...')})}
+				this.loadFasta(seq,function(x){console.log('... file loaded ...')}, abc)}
 			else{this.encode(seq,abc,pack)}
 		}
 		else{this.encode(seq,abc,pack,seed)}
