@@ -1,5 +1,5 @@
 function fig1(n)
-% figure 1 - Sierpinski's triangle + CGR plane, filled randomly
+% figure 1 - Sierpinski's triangle + CGR plane, filled randomly (Matlab code)
 % n is the number of points, for example fig1(1000)
 
 if nargin==0;n=1000;end
