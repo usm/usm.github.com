@@ -130,8 +130,10 @@ align = function(s1,s2){
         div.appendChild(freeAlign);freeAlign.textContent="Alignment-free";
         div.appendChild(document.createElement('hr'));
         // demo sequences
-        var demo1 = 'AAABCBCBCBCBCDDDABBZZA';
-        var demo2 = 'DDDBCBCBCBCBCAAAQQBZZ';
+        //var demo1 = 'AAABCBCBCBCBCDDDABBZZA';
+        //var demo2 = 'DDDBCBCBCBCBCAAAQQBZZ';
+        var demo1 = 'TTGAAAGAAAAACAATTTTGGAATCGTATATTAGAATTTGCACAAGAAAGACTGACTCGATCCATGTATGATTGAAAGAAAAACAATTTTGGAATCGTATATTAGAATTTGCACAAGAAAGACTGACTCGATCCATGTATGA';
+        var demo2 = 'AGAGTCGTCCGATTTTAACAGAACAATTTTGGAATCGTATATTAGAATTTGCACAAGAAAAGAAAAAGAGTCGTCCGATTTTAACAGAACAATTTTGGAATCGTATATTAGAATTTGCACAAGAAAAGAAAA';
         // Actions
         demoSeqs.onclick=function(){
             //in1.value='TTGAAAGAAAAACAATTTTGGAATCGTATATTAGAATTTGCACAAGAAAGACTGACTCGATCCATGTATGA';
@@ -156,7 +158,12 @@ align = function(s1,s2){
             aln.smithWaterman();
             // show results
             var pre = document.createElement('pre');
+            pre.style.color='green';
             pre.textContent += '----- simplified Smith-Waterman alignment -----';
+            pre.textContent +='\nscore: '+aln.smithWaterman.score+' time: '+aln.smithWaterman.t+'ms';
+            SWcalcDiv.innerHTML=""; // reset display
+            SWcalcDiv.appendChild(pre);
+            // show alignment
             var L1=""; // first line, seq 1
             var L2=""; // third line, seq 2
             var s1 = "-"+aln.seq1, s2 = "-"+aln.seq2; // blank insert character
@@ -176,20 +183,40 @@ align = function(s1,s2){
                     break;
                 }
             }
-            pre.textContent +='\nscore: '+aln.smithWaterman.score+' time: '+aln.smithWaterman.t+'ms';
-            pre.textContent +='\n'+L1+'\n'+L2;
-            
-            SWcalcDiv.innerHTML=""; // reset display
-            SWcalcDiv.appendChild(pre);
-            pre.style.color='green';
-            
-            
-            4;
+            aln.smithWaterman.seq1=L1;
+            aln.smithWaterman.seq2=L2;
+            SWcalcDiv.appendChild(aln.showAlign(L1,L2,100));
+            /*
+            var preA1 = document.createElement('pre');
+            preA1.style.color='green';
+            //preA1.style.whiteSpace='nowrap';
+            preA1.textContent=L1;
+            SWcalcDiv.appendChild(preA1);
+            var preA2 = document.createElement('pre');
+            preA2.style.color='green';
+            preA2.style.whiteSpace='nowrap';
+            preA2.textContent=L2;
+            SWcalcDiv.appendChild(preA2);
+            */
         }
         
     }
     
+    this.showAlign=function(L1,L2,m){ // returns a pre element with teh alignment
+        var A = '', n = L1.length;
+        if(!m){m=100};
+        for(var i = 0 ; i < n ; i+=m){
+            A+='>['+(i+1)+':'+Math.min(n,(i+m))+']\n';
+            A+=L1.slice(i,i+m)+'\n';
+            A+=L2.slice(i,i+m)+'\n';
+        }
+        var pre = document.createElement('pre');
+        pre.style.color='green';
+        pre.textContent=A;
+        return pre;
+    }
     
+    var preA1 = document.createElement('pre');
     
     // --- INI ---
     //this.showSeqs();
