@@ -158,9 +158,9 @@ align = function(s1,s2){
             aln.smithWaterman();
             // show results
             var pre = document.createElement('pre');
-            pre.style.color='green';
-            pre.textContent += '----- simplified Smith-Waterman alignment -----';
-            pre.textContent +='\nscore: '+aln.smithWaterman.score+' time: '+aln.smithWaterman.t+'ms';
+            pre.style.color='navy';
+            pre.textContent += '> Simplified Smith-Waterman alignment';
+            pre.textContent +='\nscore: '+aln.smithWaterman.score+'\ntime: '+aln.smithWaterman.t+' ms';
             SWcalcDiv.innerHTML=""; // reset display
             SWcalcDiv.appendChild(pre);
             // show alignment
@@ -186,18 +186,7 @@ align = function(s1,s2){
             aln.smithWaterman.seq1=L1;
             aln.smithWaterman.seq2=L2;
             SWcalcDiv.appendChild(aln.showAlign(L1,L2,100));
-            /*
-            var preA1 = document.createElement('pre');
-            preA1.style.color='green';
-            //preA1.style.whiteSpace='nowrap';
-            preA1.textContent=L1;
-            SWcalcDiv.appendChild(preA1);
-            var preA2 = document.createElement('pre');
-            preA2.style.color='green';
-            preA2.style.whiteSpace='nowrap';
-            preA2.textContent=L2;
-            SWcalcDiv.appendChild(preA2);
-            */
+            SWcalcDiv.appendChild(aln.showMatrix(aln.smithWaterman.H));
         }
         
     }
@@ -208,7 +197,7 @@ align = function(s1,s2){
         for(var i = 0 ; i < n ; i+=m){
             A+='>['+(i+1)+':'+Math.min(n,(i+m))+']\n';
             A+=L1.slice(i,i+m)+'\n';
-            A+=L2.slice(i,i+m)+'\n';
+            A+=L2.slice(i,i+m)+'\n\n';
         }
         var pre = document.createElement('pre');
         pre.style.color='green';
@@ -216,7 +205,11 @@ align = function(s1,s2){
         return pre;
     }
     
-    var preA1 = document.createElement('pre');
+    this.showMatrix = function(M){ // return it as a canvas
+        var cv = document.createElement('canvas');
+        jmat.imagesc(cv,M);
+        return cv;
+    }
     
     // --- INI ---
     //this.showSeqs();
