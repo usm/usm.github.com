@@ -442,6 +442,6 @@ usmDist=function(s1,s2,opt){ // Compares two USM encoded sequences
 // load jmat
 if(typeof(jmat)=='undefined'){
 	var s=document.createElement('script');
-	s.src='https://jmat.googlecode.com/git/jmat.js';
+	s.src='https://usm.github.io/jmat.js';
 	document.head.appendChild(s);
 }

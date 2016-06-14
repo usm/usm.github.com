@@ -6,7 +6,7 @@
   <meta name="Keywords" content="USM">
   <meta name="Description" content="Universal Sequence Maps">
   <script src="usm.js"></script>
-  <script src="http://jmat.googlecode.com/git/jmat.js"></script>
+  <script src="https://usm.github.io/jmat.js"></script>
  </head>
  <body>
   Project [<a href="https://github.com/usm/usm.github.com/wiki">HomePage</a>] [<a href="https://github.com/usm/usm.github.com/network">Version history</a>] [<a href="https://github.com/usm/usm.github.com">Source Files</a>] [<a href="http://www.youtube.com/watch?v=4plexrs37jg&hd=1">Video #1</a>]  [<a href="http://www.youtube.com/watch?v=nWeBxOXBHVo">Video #2</a>] [<a href="http://www.almob.org/content/7/1/12/abstract">Algorithms for Molecular Biology 7:12</a>]
@@ -195,8 +195,8 @@ usmGUI.processProbeSequence=function(){
 	 };
 	 tdi=td();trf.appendChild(tdi);tdi.textContent='Reduce';tdi.style.color='blue';
 	 tdi=td();trf.appendChild(tdi);tdi.textContent='to:';tdi.style.color='blue';
-	 
-	 
+
+
 
 	 // seq
 	 trf=document.getElementById('seq');
@@ -330,7 +330,7 @@ usmGUI.processProbeSequence=function(){
      }
   }
 
-  
+
   usmGUI.usmDistMount=function (){
      n=ubase.cube.length;
 	 for (var i=0;i<n;i++){
@@ -353,7 +353,7 @@ usmGUI.processProbeSequence=function(){
      if (ev.keyCode==13){ // if Enter was pressed
 	    // check that other coordinates are filled
 		var n = ubase.cube.length;
-		var checkOk=true; // it will stay true unless one coordinate is missing 
+		var checkOk=true; // it will stay true unless one coordinate is missing
 		for (var j=2;j>0;j=j-1){ // j=[2,1] the two coordinates being compared
 			for (var i=0;i<n;i++){
 				var checkId = that.id.slice(0,1)+j+'C'+i;
@@ -383,11 +383,11 @@ usmGUI.processProbeSequence=function(){
 
 		}
      }
-     
+
   }
 
 
-  
+
   //gId('processBase').click();
   </script>
  </body>
