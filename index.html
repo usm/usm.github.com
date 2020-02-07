@@ -11,7 +11,7 @@
  <body>
   Project [<a href="https://github.com/usm/usm.github.com/wiki">HomePage</a>] [<a href="https://github.com/usm/usm.github.com/network">Version history</a>] [<a href="https://github.com/usm/usm.github.com">Source Files</a>] [<a href="http://www.youtube.com/watch?v=4plexrs37jg&hd=1">Video #1</a>]  [<a href="http://www.youtube.com/watch?v=nWeBxOXBHVo">Video #2</a>] [<a href="http://www.almob.org/content/7/1/12/abstract">Algorithms for Molecular Biology 7:12</a>]
  <hr>
- <h3><a id="anchor_encoding" name="encoding">1.</a> Sequence Encoding</h3>
+ <h3><a id="anchor_encoding" name="encoding">1.</a> Sequence Encoding <button onclick="demoFig3()" style="background-color:yellow;color:blue">demo Fig3</button> <button onclick="demoFig4()" style="background-color:cyan;color:blue">demo Fig4</button></h3>
  <table><tr><td>
  <table>
  <tr id="cgrBase"><td>Base Sequence:</td><td><input id="baseSequence" type="text" size=30 style="color:blue"><button id="processBase" onclick="usmGUI.processBaseSequence()">Encode </button></td></tr>
@@ -386,7 +386,52 @@ usmGUI.processProbeSequence=function(){
 
   }
 
+  demoFig3=function(){
+  	if(probeSequence.value.length>0){location.hash='demoFig3';location.reload()}
+  	else{
+  		baseSequence.value='acggctgctatctgcgtacggtcgat'
+		processBase.style.backgroundColor='yellow'
+		setTimeout(function(){
+			processBase.style.backgroundColor='white'
+			processBase.click()
+			setTimeout(function(){
+				probeSequence.value='aaagctatctgaaaggtcaa'
+				processProbe.style.backgroundColor='yellow'
+				setTimeout(function(){
+					processProbe.style.backgroundColor='white'
+					processProbe.click()
+				},1000)
+			},1000)
+		},1000)
+  	//debugger
+  	}
+		
+  }
 
+  demoFig4=function(){
+  	if(probeSequence.value.length>0){location.hash='demoFig4';location.reload()}
+  	else{
+  		baseSequence.value='I am a poet. I am very fond of banannas.'
+		processBase.style.backgroundColor='cyan'
+		setTimeout(function(){
+			processBase.style.backgroundColor='white'
+			processBase.click()
+			setTimeout(function(){
+				probeSequence.value='I am of very fond of bananas. Am I a poet'
+				processProbe.style.backgroundColor='cyan'
+				setTimeout(function(){
+					processProbe.style.backgroundColor='white'
+					processProbe.click()
+				},1000)
+			},1000)
+		},1000)
+		//debugger
+	  }
+  	}
+  	//debugger
+  	if(location.hash=='#demoFig3'){demoFig3()}
+	if(location.hash=='#demoFig4'){demoFig4()}
+	location.hash=''
 
   //gId('processBase').click();
   </script>
