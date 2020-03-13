@@ -1,0 +1,2 @@
+N=[[0:6],5 5 5 5 5 5 5 5 5 5 5 5 5] ;T=[1 1 1 1 1 1 1 1 0.8 0.7 0.6 0.5 0.4 0.3 0.25 0.2 0.15 0.1 0.05 0];for i=1:length(N);opt.parms.T=T(i);opt.parms.N=N(i);y=USM_main('study.fas',opt);close(3);USM_plot(y,6);J(i)=getframe;end
+movie(J,2,1)
