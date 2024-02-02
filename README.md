@@ -4,7 +4,7 @@ Javascript libraries for Universal Sequence Maps
 
 ## Aplication
 
-A web App illustrating the use of the javascript libraries is available at [http://usm.github.com](http://usm.github.com).
+A web App illustrating the use of the javascript libraries is available at [http://usm.github.io](http://usm.github.io).
 
 ## js library
 
