@@ -293,6 +293,7 @@ usmGUI.processProbeSequence=function(){
 	 }
 	 else { // decoding here
 	   //console.log(that);
+		if(ev){
 	   if (ev.keyCode==13){ // ENTER PRESSED
 	      // Forward or backward?
 		  var id = that.id.split('_');
@@ -317,7 +318,7 @@ usmGUI.processProbeSequence=function(){
 		     gId(id[0]+'calc').textContent=ds; // display
 			 //gId('borrowedFBdecoded').textContent=''; //clear decoded FB sequence from #4
 		  }
-	   }
+	   }}
 	 }
   }
 
