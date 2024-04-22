@@ -11,7 +11,7 @@
  <body>
   Project [<a href="https://github.com/usm/usm.github.com/wiki">HomePage</a>] [<a href="https://github.com/usm/usm.github.com/network">Version history</a>] [<a href="https://github.com/usm/usm.github.com">Source Files</a>] [<a href="http://www.youtube.com/watch?v=4plexrs37jg&hd=1">Video #1</a>]  [<a href="http://www.youtube.com/watch?v=nWeBxOXBHVo">Video #2</a>] [<a href="http://www.almob.org/content/7/1/12/abstract">Algorithms for Molecular Biology 7:12</a>]
  <hr>
- <h3><a id="anchor_encoding" name="encoding">1.</a> Sequence Encoding <button onclick="demoFig3()" style="background-color:yellow;color:blue">demo Fig3</button> <button onclick="demoFig4()" style="background-color:cyan;color:blue">demo Fig4</button></h3>
+ <h3><a id="anchor_encoding" name="encoding">1.</a> Sequence Encoding <button onclick="demoFig3()" style="background-color:yellow;color:blue">demo Fig3</button> <button onclick="demoFig4()" style="background-color:cyan;color:blue">demo Fig4</button> <button onclick="demoFold()" style="background-color:lime;color:maroon">demo Fold</button></h3>
  <table><tr><td>
  <table>
  <tr id="cgrBase"><td>Base Sequence:</td><td><input id="baseSequence" type="text" size=30 style="color:blue"><button id="processBase" onclick="usmGUI.processBaseSequence()">Encode </button></td></tr>
@@ -41,7 +41,7 @@
   Between USM coordinates (Eq. 3-5):
  <table id='usmDist' style='color:green'>
  <tr><td>d(</td><td style='color:blue'><span id='usmF1'>Forward: </span><hr><span id='usmB1'>Backward: </span></td><td>,</td><td style='color:red'><span id='usmF2'>Forward: </span><hr><span id='usmB2'>Backward: </span></td><td>)</td><td> = </td><td><span id='dF'>dF</span><hr><span id='dB'>dB</span></td></tr>
- <tr><td></td><td></td><td></td><td></td><td></td><td> =  </td><td><span id='dUSM'>dUSM</span></td></tr>
+ <tr><td></td><td></td><td></td><td></td><td></td><td> =  </td><td><span id='dUSM'>dUSM = dF+DB-1 = <i style="color:maroon;font-size:x-large">Sn</i></span></td></tr>
  </table>
  </div>
  <h3><a id="anchor_map" name="map">4.</a> Sequence MapReduced comparison</h3>
@@ -429,9 +429,30 @@ usmGUI.processProbeSequence=function(){
 		//debugger
 	  }
   	}
+	demoFold=function(){
+  	if(probeSequence.value.length>0){location.hash='demoFold';location.reload()}
+  	else{
+  		baseSequence.value='AATGATTACAGGG'
+		processBase.style.backgroundColor='cyan'
+		setTimeout(function(){
+			processBase.style.backgroundColor='white'
+			processBase.click()
+			setTimeout(function(){
+				probeSequence.value='TGAGATTACACGTCA'
+				processProbe.style.backgroundColor='cyan'
+				setTimeout(function(){
+					processProbe.style.backgroundColor='white'
+					processProbe.click()
+				},1000)
+			},1000)
+		},1000)
+		//debugger
+	  }
+  	}
   	//debugger
   	if(location.hash=='#demoFig3'){demoFig3()}
 	if(location.hash=='#demoFig4'){demoFig4()}
+	if(location.hash=='#demoFold'){demoFold()}
 	location.hash=''
 
   //gId('processBase').click();
